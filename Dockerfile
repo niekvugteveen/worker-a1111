@@ -1,17 +1,7 @@
 # ---------------------------------------------------------------------------- #
-#                         Stage 1: Download the models                         #
+#                        Stage 1: Build the final image                        #
 # ---------------------------------------------------------------------------- #
-FROM alpine/git:2.43.0 as download
-
-# NOTE: CivitAI usually requires an API token, so you need to add it in the header
-#       of the wget command if you're using a model from CivitAI.
-RUN apk add --no-cache wget && \
-    wget -q -O /model.safetensors https://huggingface.co/XpucT/Deliberate/resolve/main/Deliberate_v6.safetensors
-
-# ---------------------------------------------------------------------------- #
-#                        Stage 2: Build the final image                        #
-# ---------------------------------------------------------------------------- #
-FROM python:3.10.14-slim as build_final_image
+FROM python:3.10.14-slim AS build_final_image
 
 ARG A1111_RELEASE=v1.9.3
 
@@ -28,14 +18,23 @@ RUN apt-get update && \
     apt-get autoremove -y && rm -rf /var/lib/apt/lists/* && apt-get clean -y
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    git clone https://github.com/AUTOMATIC1111/stable-diffusion-webui.git && \
+    export GIT_TERMINAL_PROMPT=0 && \
+    git config --global url."https://".insteadOf git:// && \
+    git clone https://github.com/niekvugteveen/stable-diffusion-webui.git && \
     cd stable-diffusion-webui && \
-    git reset --hard ${A1111_RELEASE} && \
     pip install xformers && \
     pip install -r requirements_versions.txt && \
-    python -c "from launch import prepare_environment; prepare_environment()" --skip-torch-cuda-test
+    mkdir -p /stable-diffusion-webui/repositories && \
+    cd /stable-diffusion-webui/repositories && \
+    (git clone https://github.com/Stability-AI/stablediffusion.git stable-diffusion-stability-ai || \
+     git clone https://github.com/CompVis/stable-diffusion.git stable-diffusion-stability-ai) && \
+    git clone https://github.com/CompVis/taming-transformers.git && \
+    git clone https://github.com/crowsonkb/k-diffusion.git && \
+    git clone https://github.com/sczhou/CodeFormer.git && \
+    git clone https://github.com/salesforce/BLIP.git
 
-COPY --from=download /model.safetensors /model.safetensors
+# Copy local model files instead of downloading
+COPY ../Stable-diffusion/*.safetensors /stable-diffusion-webui/models/Stable-diffusion/
 
 # install dependencies
 COPY requirements.txt .
