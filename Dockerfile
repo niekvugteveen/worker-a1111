@@ -33,9 +33,6 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     git clone https://github.com/sczhou/CodeFormer.git && \
     git clone https://github.com/salesforce/BLIP.git
 
-# Copy local model files instead of downloading
-COPY stable-diffusion-webui/models/Stable-diffusion/*.safetensors /stable-diffusion-webui/models/Stable-diffusion/
-
 # install dependencies
 COPY sd_runpod_worker/worker-a1111/requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
@@ -45,5 +42,10 @@ COPY sd_runpod_worker/worker-a1111/test_input.json .
 
 ADD sd_runpod_worker/worker-a1111/src .
 
-RUN chmod +x /start.sh
+RUN chmod +x /start.sh && \
+    sed -i 's/\r$//' /start.sh
+
+# Copy local model files at the end to avoid rebuilding everything when models change
+COPY stable-diffusion-webui/models/Stable-diffusion/*.safetensors /stable-diffusion-webui/models/Stable-diffusion/
+
 CMD /start.sh
