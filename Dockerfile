@@ -34,16 +34,16 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     git clone https://github.com/salesforce/BLIP.git
 
 # Copy local model files instead of downloading
-COPY ../Stable-diffusion/*.safetensors /stable-diffusion-webui/models/Stable-diffusion/
+COPY stable-diffusion-webui/models/Stable-diffusion/*.safetensors /stable-diffusion-webui/models/Stable-diffusion/
 
 # install dependencies
-COPY requirements.txt .
+COPY sd_runpod_worker/worker-a1111/requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install --no-cache-dir -r requirements.txt
 
-COPY test_input.json .
+COPY sd_runpod_worker/worker-a1111/test_input.json .
 
-ADD src .
+ADD sd_runpod_worker/worker-a1111/src .
 
 RUN chmod +x /start.sh
 CMD /start.sh
